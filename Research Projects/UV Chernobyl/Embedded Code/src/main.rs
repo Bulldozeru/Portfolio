@@ -105,8 +105,8 @@ async fn executor(mut led: Output<'static> ) { // 210 000 420 000
         let mut runtime = 0;
         match message {
 
-            WaitResult::Message(30) => runtime = 100, // 210 000
-            WaitResult::Message(60) => runtime = 200,
+            WaitResult::Message(30) => runtime = 210000, // 210 000
+            WaitResult::Message(60) => runtime = 420000,
             _ => runtime = 0
         }
 
