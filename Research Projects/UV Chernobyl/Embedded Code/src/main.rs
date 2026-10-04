@@ -33,17 +33,21 @@ async fn main(spawner: Spawner) {
     let p = embassy_stm32::init(Default::default());
     info!("Hello World!");
 
-    let mut button = ExtiInput::new(p.PE15, p.EXTI15, Pull::Down, Irqs);
-    let mut rst = ExtiInput::new(p.PB10, p.EXTI10, Pull::Down, Irqs);
-    
-    let mut counter = 0;
+    let mut rst = ExtiInput::new(p.PE15, p.EXTI15, Pull::Down, Irqs);
+    let mut button30 = ExtiInput::new(p.PB10, p.EXTI10, Pull::Down, Irqs);
+    let mut button60  = ExtiInput::new(p.PE14, p.EXTI14, Pull::Down, Irqs);
 
     let mut led = Output::new(p.PB0, Level::Low, Speed::Low);
-    let mut program: &'static mut i32;
     
-    spawner.spawn(program30(button).unwrap());
+    spawner.spawn(program60(button60).unwrap());
+    spawner.spawn(program30(button30).unwrap());
+
     spawner.spawn(killSwitch(rst).unwrap());
     spawner.spawn(executor(led).unwrap());
+
+    // spawner.spawn(buttonTrigger2(rst);
+    // spawner.spawn(executor(led).unwrap());
+
     info!("Press the USER button...");
 
 
@@ -58,12 +62,13 @@ async fn program30(mut button: ExtiInput<'static, Async>) {
     loop {
 
         button.wait_for_rising_edge().await;
-        info!("Pressed!");
+        info!("30");
         START_SIGNAL.signal(());
         presa.publish(30).await;
     }
 }
 
+#[embassy_executor::task]
 async fn program60(mut button: ExtiInput<'static, Async>) {
 
     let presa = channel.publisher().unwrap();
@@ -71,7 +76,8 @@ async fn program60(mut button: ExtiInput<'static, Async>) {
     loop {
 
         button.wait_for_rising_edge().await;
-        info!("Pressed!");
+        info!("60");
+        START_SIGNAL.signal(());
         presa.publish(60).await;
     }
 }
@@ -89,7 +95,7 @@ async fn killSwitch(mut button: ExtiInput<'static, Async>) {
 }
 
 #[embassy_executor::task]
-async fn executor(mut led: Output<'static> ) { 
+async fn executor(mut led: Output<'static> ) { // 210 000 420 000
 
 
     loop {
@@ -101,14 +107,16 @@ async fn executor(mut led: Output<'static> ) {
         let mut runtime = 0;
         match message {
 
-            WaitResult::Message(30) => runtime = 210000,
-            WaitResult::Message(60) => runtime = 420000,
+            WaitResult::Message(30) => runtime = 100, // 210 000
+            WaitResult::Message(60) => runtime = 200,
             _ => runtime = 0
         }
 
         info!("Oscillations");
         let loop_future = async {
             while counter <  runtime {
+                // YOUR TRIGGERED FUNCTION LOGIC HERE
+                // Example: blinking an LED or running a motor
                 
                 Timer::after_millis(2).await;
                 led.set_high();
@@ -118,8 +126,10 @@ async fn executor(mut led: Output<'static> ) {
             }
         };
 
+        // 3. Define the stop condition
         let killSwitch = STOP_SIGNAL.wait();
 
+        // 4. Race them against each other using `select`
         match select(loop_future, killSwitch).await {
             Either::First(_) => {}
             Either::Second(_) => { led.set_low(); }
@@ -127,4 +137,13 @@ async fn executor(mut led: Output<'static> ) {
     }
 
 }
+
+
+
+
+
+
+
+
+
 
