@@ -26,8 +26,6 @@ bind_interrupts!(
         EXTI15_10 => exti::InterruptHandler<interrupt::typelevel::EXTI15_10>;
 });
 
-static PUB: PubSubChannel<CriticalSectionRawMutex, &'static str, 4, 2, 8> = PubSubChannel::new();
-
 #[embassy_executor::main]
 async fn main(spawner: Spawner) {
     let p = embassy_stm32::init(Default::default());
